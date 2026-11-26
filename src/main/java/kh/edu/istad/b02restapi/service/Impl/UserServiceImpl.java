@@ -1,51 +1,50 @@
 package kh.edu.istad.b02restapi.service.Impl;
 
-
+import kh.edu.istad.b02restapi.dto.UserResponse;
+import kh.edu.istad.b02restapi.mapper.UserMapper;
 import kh.edu.istad.b02restapi.model.User;
 import kh.edu.istad.b02restapi.repository.UserRepository;
-import kh.edu.istad.b02restapi.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.lang.module.ResolutionException;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
-    public List<User> getAll() {
-        return userRepository.selectAll();
-    }
+    public Page<UserResponse> getUserWithPaging(int pageNumber, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
-
-    @Override
-    public User getById(UUID id) {
-        return userRepository.selectById(id)
-                .orElseThrow();
+        return userRepository.findAll(pageable)
+                .map(userMapper::mapUsertoUserResponse);
     }
 
     @Override
-    public User create(User user) {
-        User newUser = new User(UUID.randomUUID(), user.getName(),user.getUsername(), user.getPassword(),true);
-
-        userRepository.insert(newUser);
-        return newUser;
+    public UserResponse getById(UUID id) {
+        return userRepository.findById(id)
+                .map(userMapper::mapUsertoUserResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "User not found"));
     }
 
     @Override
-    public void deleteById(UUID id) {
-        if (!userRepository.deleteById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found");
-        }
-
+    public List<UserResponse> selectAll() {
+        return userRepository.findAll()
+                .stream()
+                .map(userMapper::mapUsertoUserResponse)
+                .toList();
     }
-
 }
-
-
